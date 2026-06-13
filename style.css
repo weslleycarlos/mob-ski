@@ -137,9 +137,74 @@ canvas#game {
   box-shadow: none;
 }
 
-.controls { margin-top: 22px; font-size: 14px; color: #b9c8e6; }
+.controls { margin-top: 18px; font-size: 13px; color: #cddaf2; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
 .controls strong { display: block; margin-bottom: 8px; color: #e6eeff; letter-spacing: 1px; }
 .ctrl-row { margin: 4px 0; }
+
+/* ----- Menu inicial sobre a imagem de fundo ----- */
+.menu-overlay {
+  background:
+    linear-gradient(180deg, rgba(20,38,72,0) 30%, rgba(20,38,72,0.65) 44%, #16294a 56%, #122038 100%),
+    url('assets/background.png') top center / 100% auto no-repeat,
+    #16294a;
+  backdrop-filter: none;
+  align-items: flex-end;
+  padding-bottom: 26px;
+}
+.menu-panel {
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  background: rgba(13, 22, 38, 0.55);
+  border: 1px solid rgba(120, 170, 255, 0.25);
+  border-radius: 22px;
+  padding: 20px 22px 22px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.5);
+}
+.menu-panel .desc { margin-bottom: 16px; }
+.menu-panel .powers-legend { margin-top: 16px; }
+
+/* ----- Botão de som ----- */
+#mute-btn {
+  position: absolute;
+  top: 12px; right: 14px;
+  z-index: 30;
+  width: 44px; height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: rgba(20, 33, 61, 0.78);
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+}
+#mute-btn:active { transform: scale(0.94); }
+
+/* ----- Contagem regressiva ----- */
+#countdown {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  font-size: 120px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 6px 24px rgba(0,0,0,0.6), 0 0 30px rgba(110,195,255,0.6);
+}
+#countdown.tick { animation: cd-pop 0.7s ease-out; }
+@keyframes cd-pop {
+  0% { transform: scale(2.2); opacity: 0; }
+  25% { transform: scale(1); opacity: 1; }
+  80% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.7); opacity: 0; }
+}
 
 .powers-legend { margin-top: 20px; text-align: left; font-size: 14px; color: #cdd9f0; }
 .powers-legend > div { display: flex; align-items: center; gap: 10px; margin: 7px 0; }
