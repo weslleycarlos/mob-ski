@@ -26,6 +26,8 @@ canvas#game {
   background: linear-gradient(180deg, #dfeefc 0%, #eaf6ff 100%);
   box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
   touch-action: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 /* HUD */
