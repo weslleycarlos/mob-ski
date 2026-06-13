@@ -26,8 +26,6 @@ canvas#game {
   background: linear-gradient(180deg, #dfeefc 0%, #eaf6ff 100%);
   box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
   touch-action: none;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
 }
 
 /* HUD */
@@ -131,6 +129,7 @@ canvas#game {
   transition: transform 0.1s, box-shadow 0.2s;
 }
 .btn:active { transform: translateY(2px) scale(0.99); box-shadow: 0 4px 12px rgba(110, 195, 255, 0.3); }
+.btn:disabled { opacity: 0.6; cursor: default; filter: grayscale(0.3); }
 .btn-ghost {
   background: transparent;
   color: #aebfe0;
@@ -145,10 +144,11 @@ canvas#game {
 .powers-legend { margin-top: 20px; text-align: left; font-size: 14px; color: #cdd9f0; }
 .powers-legend > div { display: flex; align-items: center; gap: 10px; margin: 7px 0; }
 .dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 8px currentColor; }
-.dot.magnet { background: #ffcf3f; color: #ffcf3f; }
-.dot.ghost  { background: #b69bff; color: #b69bff; }
-.dot.boost  { background: #ff7a59; color: #ff7a59; }
-.dot.shield { background: #4fe3c2; color: #4fe3c2; }
+.dot.shield { background: #4aa6ff; color: #4aa6ff; }
+.dot.magnet { background: #ff5a5a; color: #ff5a5a; }
+.dot.ghost  { background: #cdc8ff; color: #cdc8ff; }
+.dot.boost  { background: #ff9a3c; color: #ff9a3c; }
+.dot.double { background: #5ad24a; color: #5ad24a; }
 
 .result { margin: 18px 0; display: flex; flex-direction: column; gap: 10px; }
 .result-item {
