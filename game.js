@@ -11,6 +11,7 @@
 
   // Área de jogo lógica (retrato). É escalada para caber na tela.
   let W = 480, H = 800, DPR = 1;
+  let PXS = 3; // tamanho do "pixel" dos sprites (escala inteira, look 32 bits)
 
   function resize() {
     const wrapW = window.innerWidth;
@@ -28,6 +29,8 @@
     canvas.style.width = W + 'px';
     canvas.style.height = H + 'px';
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.imageSmoothingEnabled = false; // pixels nítidos (nearest-neighbor)
+    PXS = Math.max(2, Math.round(W / 150));
   }
   window.addEventListener('resize', resize);
   resize();
@@ -94,6 +97,198 @@
     boost:  { color: '#ff7a59', icon: '🔥', label: 'Turbo',    dur: 5 },
     shield: { color: '#4fe3c2', icon: '🛡️', label: 'Escudo',   dur: 12 },
   };
+
+  /* ============================================================
+     SISTEMA DE SPRITES PIXEL ART (estilo 32 bits)
+     Cada sprite é uma matriz de caracteres -> cor da paleta.
+     É pré-rasterizado num canvas em tamanho nativo (1px = 1px)
+     e depois desenhado com escala inteira e suavização desligada,
+     mantendo o visual chunky/retro inclusive ao girar.
+     ============================================================ */
+  const PAL = {
+    '.': null,
+    K: '#1a2238', // contorno escuro
+    // esquiador
+    R: '#e23b50', W: '#ffffff', S: '#ffd2a6',
+    B: '#2e6df0', b: '#1b46a6', g: '#8a93a6', r: '#ff5a5a',
+    // pinheiro
+    G: '#2f8f4e', E: '#236b3c', T: '#7a5230', t: '#5e3f24',
+    // pedra
+    O: '#8b95a3', o: '#aab4c2', q: '#646d7c',
+    // toco
+    U: '#6b4423', u: '#9c7b4f',
+    // boneco de neve
+    n: '#f2f9ff', N: '#ff8c2b',
+    // moeda
+    Y: '#ffcf3f', y: '#ffe89a', a: '#d99a1e',
+    // neve
+    s: '#e3f1ff',
+  };
+
+  function makeSprite(rows, pal) {
+    const w = rows[0].length, h = rows.length;
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const col = pal[rows[y][x]];
+        if (col) { g.fillStyle = col; g.fillRect(x, y, 1, 1); }
+      }
+    }
+    return c;
+  }
+
+  const SPR = {
+    skier: makeSprite([
+      '...RRRRR...',
+      '..RRRRRRR..',
+      '..RWWWWWR..',
+      '..SSSSSSS..',
+      '..SKSSKSS..',
+      '...SSSSS...',
+      '...bBBBb...',
+      '..BBBBBBB..',
+      '.gBBBBBBBg.',
+      '.gBBBBBBBg.',
+      '.g.BBBBB.g.',
+      '..bBBBBBb..',
+      '..B.....B..',
+      '.rr.....rr.',
+      '.rr.....rr.',
+      'rr.......rr',
+    ], PAL),
+    tree: makeSprite([
+      '......G......',
+      '.....GGG.....',
+      '....GGGGG....',
+      '...GGsGGGG...',
+      '.....GGG.....',
+      '....GGGGG....',
+      '...GGGGGGG...',
+      '..GGGsGGsGG..',
+      '....GGGGG....',
+      '...GGGGGGG...',
+      '..GGGGGGGGG..',
+      '.GGsGGGGGsGG.',
+      '.....TtT.....',
+      '.....TTT.....',
+      '.....TtT.....',
+      '....sTTTs....',
+    ], PAL),
+    rock: makeSprite([
+      '.....ooo.....',
+      '...oOOOOOq...',
+      '..oOOOOOOOq..',
+      '.oOOOOOOOOOq.',
+      '.OOOOOOOOOOO.',
+      '.qOOOOOOOOOq.',
+      '..qOOOOOOOq..',
+      '...qqOOOqq...',
+      '.....qqq.....',
+    ], PAL),
+    stump: makeSprite([
+      '...uuuuu...',
+      '..uUUUUUu..',
+      '..uUuUuUu..',
+      '..UUUUUUU..',
+      '..UUUUUUU..',
+      '..UUUUUUU..',
+      '...UUUUU...',
+      '..ssUUUss..',
+      '...sssss...',
+    ], PAL),
+    snowman: makeSprite([
+      '....nnn....',
+      '...nnnnn...',
+      '...nKnKn...',
+      '...nnNnn...',
+      '...nnnnn...',
+      '....nnn....',
+      '..nnnnnnn..',
+      '.nnnnnnnnn.',
+      '.nnnKnnnnn.',
+      '.nnnnnnnnn.',
+      '.nnnnnnnnn.',
+      '..nnnnnnn..',
+      '...nnnnn...',
+      '..sssssss..',
+      '...sssss...',
+    ], PAL),
+    coin: makeSprite([
+      '.YYYYY.',
+      'YYyyyYY',
+      'YyaYayY',
+      'YyaaayY',
+      'YyaYayY',
+      'YYyyyYY',
+      '.YYYYY.',
+    ], PAL),
+  };
+
+  // --- Gems de power-up: diamante colorido + símbolo branco ---
+  const DIAMOND = [
+    '.....X.....',
+    '....XXX....',
+    '...XXXXX...',
+    '..XXXXXXX..',
+    '.XXXXXXXXX.',
+    'XXXXXXXXXXX',
+    '.XXXXXXXXX.',
+    '..XXXXXXX..',
+    '...XXXXX...',
+    '....XXX....',
+    '.....X.....',
+  ];
+  function lighten(hex, f) {
+    const n = parseInt(hex.slice(1), 16);
+    let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    r = Math.min(255, Math.round(r * f));
+    g = Math.min(255, Math.round(g * f));
+    b = Math.min(255, Math.round(b * f));
+    return `rgb(${r},${g},${b})`;
+  }
+  function makeGem(main, glyph) {
+    const c = document.createElement('canvas');
+    c.width = 11; c.height = 11;
+    const g = c.getContext('2d');
+    const lite = lighten(main, 1.3);
+    const dark = lighten(main, 0.7);
+    for (let y = 0; y < 11; y++) {
+      for (let x = 0; x < 11; x++) {
+        if (DIAMOND[y][x] !== 'X') continue;
+        g.fillStyle = (x + y < 9) ? lite : (x + y > 12 ? dark : main);
+        g.fillRect(x, y, 1, 1);
+      }
+    }
+    g.fillStyle = '#ffffff';
+    for (const [gx, gy] of glyph) g.fillRect(gx, gy, 1, 1);
+    return c;
+  }
+  // Símbolos (brancos) centralizados na região do diamante.
+  const GLYPHS = {
+    magnet: [[3,3],[3,4],[3,5],[3,6],[7,3],[7,4],[7,5],[7,6],[4,7],[5,7],[6,7]],
+    ghost:  [[4,3],[5,3],[6,3],[3,4],[4,4],[5,4],[6,4],[7,4],[3,5],[4,5],[5,5],[6,5],[7,5],[3,6],[5,6],[7,6]],
+    boost:  [[5,3],[4,4],[5,4],[6,4],[3,5],[4,5],[5,5],[6,5],[7,5],[5,6],[5,7]],
+    shield: [[5,3],[5,4],[3,5],[4,5],[5,5],[6,5],[7,5],[5,6],[5,7]],
+  };
+  for (const name in POWER_DEFS) {
+    POWER_DEFS[name].spr = makeGem(POWER_DEFS[name].color, GLYPHS[name]);
+  }
+
+  // Desenha um sprite centralizado em (cx, cy) com escala inteira.
+  function blit(spr, cx, cy, scale, o) {
+    o = o || {};
+    const xs = o.xscale != null ? o.xscale : 1;
+    const w = spr.width * scale * xs, h = spr.height * scale;
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    if (o.alpha != null) ctx.globalAlpha = o.alpha;
+    ctx.translate(cx, cy);
+    if (o.rot) ctx.rotate(o.rot);
+    ctx.drawImage(spr, Math.round(-w / 2), Math.round(-h / 2), w, h);
+    ctx.restore();
+  }
 
   // ---------- Entrada do jogador ----------
   const keys = { left: false, right: false };
@@ -479,29 +674,40 @@
     }
   }
 
-  // Linhas de neve roladas para dar sensação de movimento.
+  // Fundo de neve em pixels com dithering rolante (estilo 32 bits).
   let bgScroll = 0;
   function drawBackground() {
-    const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#eaf6ff');
-    g.addColorStop(1, '#dceefc');
-    ctx.fillStyle = g;
+    ctx.fillStyle = '#e9f4ff';
     ctx.fillRect(0, 0, W, H);
 
-    bgScroll = (bgScroll + game.speed * 0.016 * 0.4) % 80;
-    ctx.fillStyle = 'rgba(180, 205, 235, 0.35)';
-    for (let y = -80 + (bgScroll % 80); y < H; y += 80) {
-      for (let x = 20; x < W; x += 90) {
-        const ox = ((y / 80) % 2) * 45;
-        ctx.beginPath();
-        ctx.ellipse(x + ox, y, 14, 5, 0, 0, Math.PI * 2);
-        ctx.fill();
+    bgScroll += game.speed * 0.016 * 0.5;
+    const step = PXS * 8;
+    const dot = PXS;
+
+    // Camada de pontos azulados (textura da neve).
+    ctx.fillStyle = '#d3e6f7';
+    const offA = bgScroll % step;
+    for (let y = -step; y < H + step; y += step) {
+      const yy = Math.round(y + offA);
+      const rowOdd = Math.floor((y + offA) / step) % 2;
+      for (let x = 0; x < W + step; x += step) {
+        ctx.fillRect(Math.round(x + rowOdd * (step / 2)), yy, dot, dot);
       }
     }
-    // Vinheta lateral suave (bordas da pista).
-    ctx.fillStyle = 'rgba(160, 195, 230, 0.25)';
-    ctx.fillRect(0, 0, 8, H);
-    ctx.fillRect(W - 8, 0, 8, H);
+    // Brilhos brancos esparsos (parallax mais rápido).
+    ctx.fillStyle = '#ffffff';
+    const step2 = step * 2;
+    const offB = (bgScroll * 1.35) % step2;
+    for (let y = -step2; y < H + step2; y += step2) {
+      const yy = Math.round(y + offB);
+      for (let x = step; x < W; x += step2) {
+        ctx.fillRect(Math.round(x), yy, dot, dot);
+      }
+    }
+    // Bordas da pista em pixels.
+    ctx.fillStyle = 'rgba(150, 190, 225, 0.3)';
+    ctx.fillRect(0, 0, PXS, H);
+    ctx.fillRect(W - PXS, 0, PXS, H);
   }
 
   function drawTrails() {
@@ -522,125 +728,37 @@
   }
 
   function drawCoin(c) {
-    const s = 1 + Math.sin(c.pulse) * 0.08;
+    // Giro fake: comprime/estica no eixo X (nearest-neighbor = look retro).
+    const xs = 0.35 + 0.65 * Math.abs(Math.cos(c.pulse));
     ctx.save();
-    ctx.translate(c.x, c.y);
-    ctx.scale(s, s);
     ctx.shadowColor = 'rgba(255, 200, 40, 0.7)';
-    ctx.shadowBlur = 12;
-    ctx.fillStyle = '#ffcf3f';
-    ctx.beginPath();
-    ctx.arc(0, 0, c.r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#ffe89a';
-    ctx.beginPath();
-    ctx.arc(0, 0, c.r * 0.62, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#e0a020';
-    ctx.font = `bold ${c.r}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('$', 0, 1);
+    ctx.shadowBlur = 10;
+    blit(SPR.coin, Math.round(c.x), Math.round(c.y), PXS, { xscale: xs });
     ctx.restore();
   }
 
   function drawPowerup(p) {
     const def = POWER_DEFS[p.name];
-    const s = 1 + Math.sin(p.pulse) * 0.12;
+    const s = 1 + Math.sin(p.pulse) * 0.1;
     ctx.save();
-    ctx.translate(p.x, p.y);
-    ctx.scale(s, s);
     ctx.shadowColor = def.color;
-    ctx.shadowBlur = 20;
-    ctx.fillStyle = def.color;
-    ctx.beginPath();
-    ctx.arc(0, 0, p.r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = 'rgba(255,255,255,0.92)';
-    ctx.beginPath();
-    ctx.arc(0, 0, p.r * 0.74, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.font = `${p.r * 1.1}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(def.icon, 0, 1);
+    ctx.shadowBlur = 18;
+    blit(def.spr, Math.round(p.x), Math.round(p.y), PXS * s);
     ctx.restore();
   }
 
   function drawObstacle(o) {
-    ctx.save();
-    ctx.translate(o.x, o.y);
-    // sombra
-    ctx.fillStyle = 'rgba(120, 150, 185, 0.3)';
-    ctx.beginPath();
-    ctx.ellipse(0, o.r * 0.6, o.r * 0.9, o.r * 0.35, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    if (o.type === 'tree') {
-      ctx.fillStyle = '#7a5230';
-      ctx.fillRect(-3, 2, 6, 14);
-      ctx.fillStyle = '#2f8f4e';
-      for (let i = 0; i < 3; i++) {
-        const yy = -o.r + i * 9;
-        const ww = o.r - i * 3;
-        ctx.beginPath();
-        ctx.moveTo(0, yy - 4);
-        ctx.lineTo(ww, yy + 10);
-        ctx.lineTo(-ww, yy + 10);
-        ctx.closePath();
-        ctx.fill();
-      }
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
-      ctx.beginPath(); ctx.arc(-4, -8, 3, 0, 6.28); ctx.arc(5, 2, 2.5, 0, 6.28); ctx.fill();
-    } else if (o.type === 'rock') {
-      ctx.fillStyle = '#8b95a3';
-      ctx.beginPath();
-      ctx.moveTo(-o.r, 6);
-      ctx.lineTo(-o.r * 0.5, -o.r * 0.8);
-      ctx.lineTo(o.r * 0.4, -o.r * 0.6);
-      ctx.lineTo(o.r, 6);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = '#aab4c2';
-      ctx.beginPath();
-      ctx.moveTo(-o.r * 0.5, -o.r * 0.8);
-      ctx.lineTo(o.r * 0.4, -o.r * 0.6);
-      ctx.lineTo(-o.r * 0.1, 0);
-      ctx.closePath();
-      ctx.fill();
-    } else if (o.type === 'stump') {
-      ctx.fillStyle = '#6b4423';
-      ctx.fillRect(-o.r * 0.6, -o.r * 0.5, o.r * 1.2, o.r);
-      ctx.fillStyle = '#9c7b4f';
-      ctx.beginPath();
-      ctx.ellipse(0, -o.r * 0.5, o.r * 0.6, o.r * 0.28, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#6b4423';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.ellipse(0, -o.r * 0.5, o.r * 0.32, 0.15 * o.r, 0, 0, 6.28); ctx.stroke();
-    } else { // snowman
-      ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = '#cfe0f0';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(0, 6, o.r * 0.7, 0, 6.28); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.arc(0, -o.r * 0.5, o.r * 0.5, 0, 6.28); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#333';
-      ctx.beginPath(); ctx.arc(-3, -o.r * 0.6, 1.6, 0, 6.28); ctx.arc(3, -o.r * 0.6, 1.6, 0, 6.28); ctx.fill();
-      ctx.fillStyle = '#ff8c2b';
-      ctx.beginPath(); ctx.moveTo(0, -o.r * 0.45); ctx.lineTo(7, -o.r * 0.35); ctx.lineTo(0, -o.r * 0.28); ctx.fill();
-    }
-    ctx.restore();
+    const spr = SPR[o.type];
+    // Sombra em pixels na base do sprite.
+    ctx.fillStyle = 'rgba(120, 150, 185, 0.28)';
+    const sw = spr.width * PXS * 0.55, sh = PXS * 1.5;
+    const by = Math.round(o.y + spr.height * PXS * 0.42);
+    ctx.fillRect(Math.round(o.x - sw / 2), by, Math.round(sw), Math.round(sh));
+    blit(spr, Math.round(o.x), Math.round(o.y), PXS);
   }
 
   function drawSkier() {
-    ctx.save();
-    ctx.translate(skier.x, skier.y);
-    const lean = skier.lean;
-    ctx.rotate(lean * 0.35);
-
-    // Aura de power-up.
+    // Aura de power-up (escudo / fantasma).
     if (power.ghost > 0 || power.shield > 0) {
       const col = power.shield > 0 ? '#4fe3c2' : '#b69bff';
       ctx.save();
@@ -649,76 +767,28 @@
       ctx.shadowColor = col;
       ctx.shadowBlur = 22;
       ctx.beginPath();
-      ctx.arc(0, 0, skier.radius + 9, 0, Math.PI * 2);
+      ctx.arc(skier.x, skier.y, skier.radius + 10, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
 
-    // Sombra.
+    // Sombra em pixels.
     ctx.fillStyle = 'rgba(100, 130, 170, 0.25)';
-    ctx.beginPath();
-    ctx.ellipse(0, 20, 16, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(Math.round(skier.x - 9 * PXS / 3), Math.round(skier.y + 24), Math.round(6 * PXS), PXS);
 
     const ghost = power.ghost > 0;
-    ctx.globalAlpha = ghost ? 0.55 : 1;
-
-    // Esquis.
-    ctx.strokeStyle = '#e23b50';
-    ctx.lineWidth = 4;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(-10, -10); ctx.lineTo(-12, 22);
-    ctx.moveTo(10, -10); ctx.lineTo(12, 22);
-    ctx.stroke();
-
-    // Corpo (casaco).
-    ctx.fillStyle = '#2e6df0';
-    ctx.beginPath();
-    ctx.roundRect(-9, -12, 18, 22, 6);
-    ctx.fill();
-
-    // Braços.
-    ctx.strokeStyle = '#2e6df0';
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(-8, -4); ctx.lineTo(-15, 6);
-    ctx.moveTo(8, -4); ctx.lineTo(15, 6);
-    ctx.stroke();
-    // Bastões.
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(-15, 6); ctx.lineTo(-17, 20);
-    ctx.moveTo(15, 6); ctx.lineTo(17, 20);
-    ctx.stroke();
-
-    // Cabeça + gorro.
-    ctx.fillStyle = '#ffd9b3';
-    ctx.beginPath();
-    ctx.arc(0, -16, 7, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ff5252';
-    ctx.beginPath();
-    ctx.arc(0, -18, 7.5, Math.PI, Math.PI * 2);
-    ctx.fill();
-    ctx.fillRect(-7.5, -18, 15, 3);
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(0, -25, 2.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.globalAlpha = 1;
-    ctx.restore();
+    blit(SPR.skier, Math.round(skier.x), Math.round(skier.y), PXS, {
+      rot: skier.lean * 0.18,
+      alpha: ghost ? 0.55 : 1,
+    });
   }
 
   function drawParticles() {
     for (const pt of particles) {
       ctx.globalAlpha = Math.max(0, pt.life);
       ctx.fillStyle = pt.color;
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
-      ctx.fill();
+      const s = Math.max(PXS, Math.round(pt.size));
+      ctx.fillRect(Math.round(pt.x), Math.round(pt.y), s, s);
     }
     ctx.globalAlpha = 1;
   }
