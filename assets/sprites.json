@@ -1,0 +1,286 @@
+{
+ "skier": {
+  "down": {
+   "file": "skier_down.png",
+   "w": 114,
+   "h": 150
+  },
+  "turn": {
+   "file": "skier_turn.png",
+   "w": 129,
+   "h": 150
+  }
+ },
+ "coins": [
+  {
+   "file": "coin_0.png",
+   "w": 84,
+   "h": 96
+  },
+  {
+   "file": "coin_1.png",
+   "w": 64,
+   "h": 96
+  },
+  {
+   "file": "coin_2.png",
+   "w": 45,
+   "h": 96
+  },
+  {
+   "file": "coin_3.png",
+   "w": 120,
+   "h": 96
+  }
+ ],
+ "powers": {
+  "shield": {
+   "file": "power_shield.png",
+   "w": 145,
+   "h": 112
+  },
+  "magnet": {
+   "file": "power_magnet.png",
+   "w": 147,
+   "h": 112
+  },
+  "ghost": {
+   "file": "power_ghost.png",
+   "w": 151,
+   "h": 112
+  },
+  "turbo": {
+   "file": "power_turbo.png",
+   "w": 140,
+   "h": 112
+  },
+  "double": {
+   "file": "power_double.png",
+   "w": 129,
+   "h": 112
+  }
+ },
+ "obstacles": [
+  {
+   "file": "obstacle_00.png",
+   "w": 83,
+   "h": 144,
+   "cat": "tree",
+   "rf": 0.26,
+   "w8": 5
+  },
+  {
+   "file": "obstacle_01.png",
+   "w": 70,
+   "h": 144,
+   "cat": "tree",
+   "rf": 0.26,
+   "w8": 5
+  },
+  {
+   "file": "obstacle_02.png",
+   "w": 66,
+   "h": 111,
+   "cat": "tree",
+   "rf": 0.26,
+   "w8": 5
+  },
+  {
+   "file": "obstacle_03.png",
+   "w": 44,
+   "h": 79,
+   "cat": "tree",
+   "rf": 0.26,
+   "w8": 4
+  },
+  {
+   "file": "obstacle_04.png",
+   "w": 40,
+   "h": 98,
+   "cat": "tree",
+   "rf": 0.26,
+   "w8": 4
+  },
+  {
+   "file": "obstacle_05.png",
+   "w": 44,
+   "h": 116,
+   "cat": "deadtree",
+   "rf": 0.22,
+   "w8": 2
+  },
+  {
+   "file": "obstacle_06.png",
+   "w": 58,
+   "h": 57,
+   "cat": "stump",
+   "rf": 0.42,
+   "w8": 3
+  },
+  {
+   "file": "obstacle_07.png",
+   "w": 62,
+   "h": 44,
+   "cat": "mound",
+   "rf": 0.5,
+   "w8": 2
+  },
+  {
+   "file": "obstacle_08.png",
+   "w": 64,
+   "h": 48,
+   "cat": "rock",
+   "rf": 0.42,
+   "w8": 4
+  },
+  {
+   "file": "obstacle_09.png",
+   "w": 68,
+   "h": 67,
+   "cat": "rock",
+   "rf": 0.44,
+   "w8": 4
+  },
+  {
+   "file": "obstacle_10.png",
+   "w": 94,
+   "h": 65,
+   "cat": "rock",
+   "rf": 0.44,
+   "w8": 4
+  },
+  {
+   "file": "obstacle_11.png",
+   "w": 86,
+   "h": 51,
+   "cat": "rock",
+   "rf": 0.46,
+   "w8": 4
+  },
+  {
+   "file": "obstacle_12.png",
+   "w": 42,
+   "h": 31,
+   "cat": "rock",
+   "rf": 0.4,
+   "w8": 3
+  },
+  {
+   "file": "obstacle_13.png",
+   "w": 60,
+   "h": 70,
+   "cat": "rock",
+   "rf": 0.42,
+   "w8": 3
+  },
+  {
+   "file": "obstacle_14.png",
+   "w": 118,
+   "h": 64,
+   "cat": "rock",
+   "rf": 0.46,
+   "w8": 3
+  },
+  {
+   "file": "obstacle_15.png",
+   "w": 81,
+   "h": 96,
+   "cat": "snowman",
+   "rf": 0.34,
+   "w8": 3
+  },
+  {
+   "file": "obstacle_16.png",
+   "w": 77,
+   "h": 96,
+   "cat": "snowman",
+   "rf": 0.34,
+   "w8": 3
+  },
+  {
+   "file": "obstacle_17.png",
+   "w": 75,
+   "h": 90,
+   "cat": "snowman",
+   "rf": 0.34,
+   "w8": 3
+  },
+  {
+   "file": "obstacle_18.png",
+   "w": 68,
+   "h": 78,
+   "cat": "snowman",
+   "rf": 0.34,
+   "w8": 2
+  },
+  {
+   "file": "obstacle_19.png",
+   "w": 76,
+   "h": 77,
+   "cat": "snowman",
+   "rf": 0.34,
+   "w8": 2
+  },
+  {
+   "file": "obstacle_20.png",
+   "w": 84,
+   "h": 39,
+   "cat": "snowball",
+   "rf": 0.5,
+   "w8": 2
+  },
+  {
+   "file": "obstacle_21.png",
+   "w": 49,
+   "h": 78,
+   "cat": "snowball",
+   "rf": 0.5,
+   "w8": 2
+  },
+  {
+   "file": "obstacle_22.png",
+   "w": 42,
+   "h": 79,
+   "cat": "sign",
+   "rf": 0.22,
+   "w8": 1
+  },
+  {
+   "file": "obstacle_23.png",
+   "w": 104,
+   "h": 63,
+   "cat": "sign",
+   "rf": 0.24,
+   "w8": 1
+  },
+  {
+   "file": "obstacle_24.png",
+   "w": 104,
+   "h": 48,
+   "cat": "fence",
+   "rf": 0.5,
+   "w8": 2
+  },
+  {
+   "file": "obstacle_25.png",
+   "w": 61,
+   "h": 68,
+   "cat": "log",
+   "rf": 0.5,
+   "w8": 2
+  },
+  {
+   "file": "obstacle_26.png",
+   "w": 58,
+   "h": 56,
+   "cat": "bush",
+   "rf": 0.34,
+   "w8": 2
+  }
+ ],
+ "background": {
+  "file": "snow_bg.png",
+  "w": 512,
+  "h": 768
+ }
+}
