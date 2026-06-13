@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1b2a4a">
+<title>Ski Rush — Descida Radical</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-wrapper">
+    <canvas id="game"></canvas>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+      <div class="hud-left">
+        <div class="hud-item">🪙 <span id="coins">0</span></div>
+        <div class="hud-item">⭐ <span id="score">0</span></div>
+      </div>
+      <div class="hud-right">
+        <div class="hud-item">🏆 <span id="best">0</span></div>
+      </div>
+    </div>
+
+    <!-- Power-up status -->
+    <div id="powerbar" class="hidden"></div>
+
+    <!-- Tela inicial -->
+    <div id="start-screen" class="overlay">
+      <div class="panel">
+        <h1>⛷️ Ski Rush</h1>
+        <p class="subtitle">Descida Radical</p>
+        <p class="desc">Desça a montanha, desvie dos obstáculos, colete moedas e poderes especiais!</p>
+        <button id="start-btn" class="btn">▶ Jogar</button>
+        <div class="controls">
+          <strong>Controles</strong>
+          <div class="ctrl-row">⌨️ Setas ◀ ▶ ou A / D — mover</div>
+          <div class="ctrl-row">📱 Arraste ou toque nos lados da tela</div>
+        </div>
+        <div class="powers-legend">
+          <div><span class="dot magnet"></span> Ímã — atrai as moedas</div>
+          <div><span class="dot ghost"></span> Fantasma — atravessa obstáculos</div>
+          <div><span class="dot boost"></span> Turbo — velocidade extra + pontos</div>
+          <div><span class="dot shield"></span> Escudo — absorve uma batida</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tela de game over -->
+    <div id="gameover-screen" class="overlay hidden">
+      <div class="panel">
+        <h1>💥 Fim de Jogo</h1>
+        <div class="result">
+          <div class="result-item"><span class="result-label">Pontos</span><span id="final-score">0</span></div>
+          <div class="result-item"><span class="result-label">Moedas</span><span id="final-coins">0</span></div>
+          <div class="result-item"><span class="result-label">Distância</span><span id="final-dist">0 m</span></div>
+        </div>
+        <div id="new-record" class="record hidden">🎉 Novo recorde!</div>
+        <button id="restart-btn" class="btn">↻ Jogar de novo</button>
+      </div>
+    </div>
+
+    <!-- Botão de pausa -->
+    <button id="pause-btn" class="hidden">⏸</button>
+    <div id="pause-screen" class="overlay hidden">
+      <div class="panel">
+        <h1>⏸ Pausado</h1>
+        <button id="resume-btn" class="btn">▶ Continuar</button>
+        <button id="quit-btn" class="btn btn-ghost">⌂ Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
