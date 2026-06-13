@@ -76,11 +76,44 @@
     finalCoins: document.getElementById('final-coins'),
     finalDist: document.getElementById('final-dist'),
     newRecord: document.getElementById('new-record'),
+    muteBtn: document.getElementById('mute-btn'),
+    countdown: document.getElementById('countdown'),
   };
 
   const BEST_KEY = 'skirush_best';
   let best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
   ui.best.textContent = best;
+
+  // ---------- Áudio ----------
+  const SND_DEFS = {
+    coin: 'coin.mp3', powerup: 'powerup.mp3', shield: 'shield.mp3',
+    crash: 'crash.mp3', game_over: 'game_over.mp3', record: 'record.mp3',
+    countdown: 'countdown.mp3', go: 'go.mp3', near_miss: 'near_miss.mp3',
+  };
+  const VOL = {
+    coin: 0.5, powerup: 0.7, shield: 0.75, crash: 0.85, game_over: 0.7,
+    record: 0.9, countdown: 0.6, go: 0.75, near_miss: 0.4,
+  };
+  const SND = {};
+  for (const k in SND_DEFS) { const a = new Audio('sounds/' + SND_DEFS[k]); a.preload = 'auto'; SND[k] = a; }
+  const music = new Audio('sounds/music_game.mp3');
+  music.loop = true; music.volume = 0.45;
+  let muted = localStorage.getItem('skirush_muted') === '1';
+
+  function sfx(name) {
+    if (muted) return;
+    const base = SND[name]; if (!base) return;
+    const a = base.cloneNode();
+    a.volume = VOL[name] != null ? VOL[name] : 0.6;
+    a.play().catch(() => {});
+  }
+  function startMusic() { if (!muted) music.play().catch(() => {}); }
+  function stopMusic() { music.pause(); try { music.currentTime = 0; } catch (e) {} }
+  function applyMute() {
+    ui.muteBtn.textContent = muted ? '🔇' : '🔊';
+    if (muted) music.pause();
+    else if (state === 'playing' || state === 'countdown') music.play().catch(() => {});
+  }
 
   // ---------- Definição dos poderes ----------
   const POWER_DEFS = {
@@ -146,6 +179,12 @@
   document.getElementById('resume-btn').addEventListener('click', resumeGame);
   document.getElementById('quit-btn').addEventListener('click', toMenu);
   ui.pauseBtn.addEventListener('click', pauseGame);
+  ui.muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    localStorage.setItem('skirush_muted', muted ? '1' : '0');
+    applyMute();
+  });
+  applyMute();
 
   function show(el) { el.classList.remove('hidden'); }
   function hide(el) { el.classList.add('hidden'); }
@@ -160,23 +199,47 @@
     game.shakeTime = 0; game.flashTime = 0;
     skier.x = W / 2; skier.vx = 0; skier.lean = 0; skier.y = H * 0.32;
     for (const k in power) power[k] = 0;
-    state = 'playing';
     hide(ui.start); hide(ui.gameover); hide(ui.pause);
     show(ui.hud); show(ui.powerbar);
     ui.pauseBtn.style.display = 'flex';
     updateHUD();
-    last = performance.now();
+    runCountdown();
   }
-  function pauseGame() { if (state === 'playing') { state = 'paused'; show(ui.pause); } }
-  function resumeGame() { if (state === 'paused') { state = 'playing'; hide(ui.pause); last = performance.now(); } }
+  function runCountdown() {
+    state = 'countdown';
+    last = performance.now();
+    startMusic();
+    const steps = ['3', '2', '1', 'JÁ!'];
+    let i = 0;
+    const el = ui.countdown;
+    (function tick() {
+      if (i < steps.length) {
+        el.classList.remove('hidden', 'tick');
+        el.textContent = steps[i];
+        void el.offsetWidth; // reinicia a animação
+        el.classList.add('tick');
+        sfx(i < 3 ? 'countdown' : 'go');
+        i++;
+        setTimeout(tick, 700);
+      } else {
+        el.classList.add('hidden');
+        state = 'playing';
+        last = performance.now();
+      }
+    })();
+  }
+  function pauseGame() { if (state === 'playing') { state = 'paused'; show(ui.pause); music.pause(); } }
+  function resumeGame() { if (state === 'paused') { state = 'playing'; hide(ui.pause); last = performance.now(); startMusic(); } }
   function toMenu() {
     state = 'menu';
+    stopMusic();
     hide(ui.pause); hide(ui.gameover); hide(ui.hud); hide(ui.powerbar);
     ui.pauseBtn.style.display = 'none';
     show(ui.start);
   }
   function gameOver() {
     state = 'gameover';
+    stopMusic();
     ui.pauseBtn.style.display = 'none';
     hide(ui.powerbar);
     const sc = Math.floor(game.score);
@@ -186,7 +249,8 @@
     if (sc > best) {
       best = sc; localStorage.setItem(BEST_KEY, String(best));
       ui.best.textContent = best; show(ui.newRecord);
-    } else hide(ui.newRecord);
+      sfx('game_over'); setTimeout(() => sfx('record'), 380);
+    } else { hide(ui.newRecord); sfx('game_over'); }
     show(ui.gameover);
   }
 
@@ -264,11 +328,12 @@
     const targetLean = Math.max(-1, Math.min(1, skier.vx / maxV));
     skier.lean += (targetLean - skier.lean) * Math.min(1, dt * 10);
 
-    // ---- Rastro ----
-    trails.push({ x: skier.x, y: skier.y + 18 * S, life: 1 });
-    if (trails.length > 60) trails.shift();
-    for (const t of trails) t.life -= dt * 0.7;
-    trails = trails.filter(t => t.life > 0);
+    // ---- Rastro na neve: cada marca fica fixa na neve e sobe com a
+    //      rolagem, formando o sulco que recua morro acima atrás do esquiador.
+    for (const t of trails) { t.y -= move; t.life -= dt * 0.5; }
+    trails.push({ x: skier.x, y: skier.y + 20 * S, life: 1 });
+    if (trails.length > 140) trails.shift();
+    trails = trails.filter(t => t.life > 0 && t.y > -30);
 
     // ---- Spawns ----
     game.spawnTimer -= dt;
@@ -299,7 +364,7 @@
       if (c.taken) continue;
       if (Math.hypot(skier.x - c.x, skier.y - c.y) < skier.radius + 16 * S) {
         c.taken = true; game.coins++; game.score += 10 * mult;
-        burst(c.x, c.y, '#ffcf3f', 8, 120);
+        burst(c.x, c.y, '#ffcf3f', 8, 120); sfx('coin');
       }
     }
 
@@ -308,23 +373,29 @@
       if (p.taken) continue;
       if (Math.hypot(skier.x - p.x, skier.y - p.y) < skier.radius + 22 * S) {
         p.taken = true; const def = POWER_DEFS[p.name];
-        power[p.name] = def.dur; burst(p.x, p.y, def.color, 18, 180); game.flashTime = 0.25;
+        power[p.name] = def.dur; burst(p.x, p.y, def.color, 18, 180); game.flashTime = 0.25; sfx('powerup');
       }
     }
 
-    // ---- Colisão obstáculos ----
+    // ---- Colisão / quase-batida com obstáculos ----
     for (const o of obstacles) {
       if (o.hit) continue;
       const g = obGeom(o);
-      if (Math.hypot(skier.x - o.x, skier.y - g.cy) < skier.radius + g.rad) {
+      const hd = skier.radius + g.rad;
+      if (Math.hypot(skier.x - o.x, skier.y - g.cy) < hd) {
         if (power.ghost > 0) { /* atravessa */ }
-        else if (power.shield > 0) { power.shield = 0; o.hit = true; game.shakeTime = 0.4; burst(o.x, g.cy, '#4aa6ff', 22, 200); }
+        else if (power.shield > 0) { power.shield = 0; o.hit = true; game.shakeTime = 0.4; burst(o.x, g.cy, '#4aa6ff', 22, 200); sfx('shield'); }
         else {
-          o.hit = true; game.shakeTime = 0.5;
+          o.hit = true; game.shakeTime = 0.5; sfx('crash');
           burst(skier.x, skier.y, '#ffffff', 26, 220);
           burst(skier.x, skier.y, '#9fb4d8', 14, 160);
           gameOver(); return;
         }
+      } else if (!o.passed && g.cy > skier.y) {
+        // obstáculo acabou de passar pelo esquiador sem bater
+        o.passed = true;
+        const dx = Math.abs(skier.x - o.x);
+        if (dx < hd + 26 * S) { sfx('near_miss'); game.score += 5 * mult; game.flashTime = Math.max(game.flashTime, 0.1); }
       }
     }
 
@@ -489,7 +560,7 @@
     let dt = (t - last) / 1000; last = t;
     if (dt > 0.05) dt = 0.05;
     if (state === 'playing') { update(dt); render(); }
-    else if (state === 'paused' || state === 'gameover') { render(); }
+    else if (state === 'paused' || state === 'gameover' || state === 'countdown') { render(); }
     requestAnimationFrame(loop);
   }
 

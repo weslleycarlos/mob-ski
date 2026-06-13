@@ -25,17 +25,20 @@
     <!-- Power-up status -->
     <div id="powerbar" class="hidden"></div>
 
+    <!-- Botão de som (sempre visível) -->
+    <button id="mute-btn" title="Som">🔊</button>
+
+    <!-- Contagem regressiva -->
+    <div id="countdown" class="hidden"></div>
+
     <!-- Tela inicial -->
-    <div id="start-screen" class="overlay">
-      <div class="panel">
-        <h1>⛷️ Ski Rush</h1>
-        <p class="subtitle">Descida Radical</p>
+    <div id="start-screen" class="overlay menu-overlay">
+      <div class="menu-panel">
         <p class="desc">Desça a montanha, desvie dos obstáculos, colete moedas e poderes especiais!</p>
         <button id="start-btn" class="btn">▶ Jogar</button>
         <div class="controls">
-          <strong>Controles</strong>
-          <div class="ctrl-row">⌨️ Setas ◀ ▶ ou A / D — mover</div>
-          <div class="ctrl-row">📱 Arraste ou toque nos lados da tela</div>
+          <span class="ctrl-row">⌨️ Setas ◀ ▶ / A · D</span>
+          <span class="ctrl-row">📱 Arraste na tela</span>
         </div>
         <div class="powers-legend">
           <div><span class="dot shield"></span> Escudo — absorve uma batida</div>
