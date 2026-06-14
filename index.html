@@ -52,13 +52,15 @@
 
     <!-- Tela de game over -->
     <div id="gameover-screen" class="overlay hidden">
-      <div class="panel">
-        <h1>💥 Fim de Jogo</h1>
+      <div class="panel gameover-panel">
+        <div class="crash-icon">💥</div>
+        <h1>Fim de Jogo</h1>
         <div class="result">
-          <div class="result-item"><span class="result-label">Pontos</span><span id="final-score">0</span></div>
-          <div class="result-item"><span class="result-label">Moedas</span><span id="final-coins">0</span></div>
-          <div class="result-item"><span class="result-label">Distância</span><span id="final-dist">0 m</span></div>
+          <div class="result-item"><span class="result-label">⭐ Pontos</span><span id="final-score">0</span></div>
+          <div class="result-item"><span class="result-label">🪙 Moedas</span><span id="final-coins">0</span></div>
+          <div class="result-item"><span class="result-label">📏 Distância</span><span id="final-dist">0 m</span></div>
         </div>
+        <div id="powers-summary" class="powers-summary"></div>
         <div id="new-record" class="record hidden">🎉 Novo recorde!</div>
         <button id="restart-btn" class="btn">↻ Jogar de novo</button>
       </div>

@@ -34,6 +34,8 @@
 
   // ---------- Carregamento dos assets ----------
   const A = { skier: {}, coins: [], powers: {}, obstacles: [], obMeta: [], obPool: [], bg: null };
+  // Floating score texts (near miss, etc.)
+  let floatingTexts = [];
   let assetsReady = false;
 
   function loadImg(src) {
@@ -50,6 +52,9 @@
     A.manifest = m;
     A.skier.down = await loadImg('assets/' + m.skier.down.file);
     A.skier.turn = await loadImg('assets/' + m.skier.turn.file);
+    // Carrega frames de animação esquerda/direita
+    A.skier.left = await Promise.all(m.skier.left.map(f => loadImg('assets/' + f.file)));
+    A.skier.right = await Promise.all(m.skier.right.map(f => loadImg('assets/' + f.file)));
     A.coins = await Promise.all(m.coins.map(c => loadImg('assets/' + c.file)));
     for (const k in m.powers) A.powers[k] = await loadImg('assets/' + m.powers[k].file);
     A.obstacles = await Promise.all(m.obstacles.map(o => loadImg('assets/' + o.file)));
@@ -133,10 +138,13 @@
     speed: 0, baseSpeed: 230,
     spawnTimer: 0, coinTimer: 0, powerTimer: 0,
     shakeTime: 0, flashTime: 0, bgScroll: 0,
+    slowMo: 0, // near-miss slow-motion timer
   };
 
-  const skier = { x: W / 2, y: 0, vx: 0, lean: 0, radius: 14 };
+  const skier = { x: W / 2, y: 0, vx: 0, lean: 0, radius: 14, animTimer: 0, animFrame: 0 };
   const power = { magnet: 0, ghost: 0, turbo: 0, double: 0, shield: 0 };
+  // Rastreia poderes coletados durante a partida
+  let powersCollected = {};
 
   let obstacles = [], coins = [], powerups = [], particles = [], trails = [];
 
@@ -192,12 +200,14 @@
   // ---------- Fluxo de telas ----------
   function startGame() {
     if (!assetsReady) return;
-    obstacles = []; coins = []; powerups = []; particles = []; trails = [];
+    obstacles = []; coins = []; powerups = []; particles = []; trails = []; floatingTexts = [];
     game.distance = 0; game.score = 0; game.coins = 0;
     game.speed = game.baseSpeed;
     game.spawnTimer = 0; game.coinTimer = 0; game.powerTimer = 11;
-    game.shakeTime = 0; game.flashTime = 0;
+    game.shakeTime = 0; game.flashTime = 0; game.slowMo = 0;
     skier.x = W / 2; skier.vx = 0; skier.lean = 0; skier.y = H * 0.32;
+    skier.animTimer = 0; skier.animFrame = 0;
+    powersCollected = {};
     for (const k in power) power[k] = 0;
     hide(ui.start); hide(ui.gameover); hide(ui.pause);
     show(ui.hud); show(ui.powerbar);
@@ -246,12 +256,30 @@
     ui.finalScore.textContent = sc;
     ui.finalCoins.textContent = game.coins;
     ui.finalDist.textContent = Math.floor(game.distance) + ' m';
+    // Resumo de poderes coletados
+    buildPowersSummary();
     if (sc > best) {
       best = sc; localStorage.setItem(BEST_KEY, String(best));
       ui.best.textContent = best; show(ui.newRecord);
       sfx('game_over'); setTimeout(() => sfx('record'), 380);
     } else { hide(ui.newRecord); sfx('game_over'); }
     show(ui.gameover);
+  }
+
+  function buildPowersSummary() {
+    const el = document.getElementById('powers-summary');
+    if (!el) return;
+    const names = Object.keys(powersCollected);
+    if (names.length === 0) {
+      el.innerHTML = '<span class="no-powers">Nenhum poder coletado</span>';
+      return;
+    }
+    el.innerHTML = names.map(k => {
+      const def = POWER_DEFS[k];
+      return `<div class="power-summary-chip" style="background:${def.color}cc">`
+           + `<span class="power-icon">${def.icon}</span>`
+           + `<span class="power-count">${powersCollected[k]}×</span></div>`;
+    }).join('');
   }
 
   // ---------- Geometria dos obstáculos ----------
@@ -301,6 +329,9 @@
 
   // ---------- Atualização ----------
   function update(dt) {
+    // Slow-mo (near miss)
+    if (game.slowMo > 0) { dt *= 0.35; game.slowMo -= dt / 0.35; }
+
     const ramp = Math.min(game.distance / 1800, 1);
     let speed = (game.baseSpeed + ramp * 240) * S;
     if (power.turbo > 0) speed *= 1.5;
@@ -327,6 +358,40 @@
     if (skier.x > W - margin) { skier.x = W - margin; skier.vx = 0; }
     const targetLean = Math.max(-1, Math.min(1, skier.vx / maxV));
     skier.lean += (targetLean - skier.lean) * Math.min(1, dt * 10);
+
+    // ---- Animação de pernas do esquiador ----
+    const absLean = Math.abs(skier.lean);
+    if (absLean > 0.15) {
+      // Velocidade da animação proporcional ao lean
+      const animSpeed = 6 + absLean * 10; // frames por segundo
+      skier.animTimer += dt * animSpeed;
+      if (skier.animTimer >= 1) {
+        skier.animTimer -= 1;
+        skier.animFrame = (skier.animFrame + 1) % 3;
+      }
+    } else {
+      skier.animTimer = 0;
+      skier.animFrame = 0;
+    }
+
+    // ---- Partículas de neve ao virar ----
+    if (absLean > 0.35) {
+      const freq = absLean > 0.7 ? 0.02 : 0.06;
+      if (Math.random() < freq / dt * 0.016) {
+        const side = skier.lean > 0 ? -1 : 1;
+        const px = skier.x + side * 12 * S;
+        const py = skier.y + 18 * S;
+        const spd = (40 + absLean * 80) * S;
+        for (let i = 0; i < 2; i++) {
+          const a = (side > 0 ? Math.PI * 0.7 : Math.PI * 0.3) + (Math.random() - 0.5) * 0.8;
+          const s = spd * (0.5 + Math.random() * 0.7);
+          particles.push({ x: px + (Math.random() - 0.5) * 6 * S, y: py,
+            vx: Math.cos(a) * s, vy: Math.sin(a) * s - 30 * S,
+            life: 1, decay: 2.5 + Math.random(), size: (1.5 + Math.random() * 2.5) * S,
+            color: Math.random() < 0.5 ? 'rgba(220,235,255,0.9)' : 'rgba(190,215,240,0.8)' });
+        }
+      }
+    }
 
     // ---- Rastro na neve: cada marca fica fixa na neve e sobe com a
     //      rolagem, formando o sulco que recua morro acima atrás do esquiador.
@@ -374,6 +439,8 @@
       if (Math.hypot(skier.x - p.x, skier.y - p.y) < skier.radius + 22 * S) {
         p.taken = true; const def = POWER_DEFS[p.name];
         power[p.name] = def.dur; burst(p.x, p.y, def.color, 18, 180); game.flashTime = 0.25; sfx('powerup');
+        // Registra poder coletado
+        powersCollected[p.name] = (powersCollected[p.name] || 0) + 1;
       }
     }
 
@@ -387,15 +454,38 @@
         else if (power.shield > 0) { power.shield = 0; o.hit = true; game.shakeTime = 0.4; burst(o.x, g.cy, '#4aa6ff', 22, 200); sfx('shield'); }
         else {
           o.hit = true; game.shakeTime = 0.5; sfx('crash');
-          burst(skier.x, skier.y, '#ffffff', 26, 220);
+          // Burst de neve na colisão
+          burst(skier.x, skier.y, '#ffffff', 32, 260);
+          burst(skier.x, skier.y, '#cde0f5', 18, 180);
           burst(skier.x, skier.y, '#9fb4d8', 14, 160);
+          // Partículas de neve espalhadas
+          for (let i = 0; i < 12; i++) {
+            const a = Math.random() * Math.PI * 2;
+            const s = (80 + Math.random() * 140) * S;
+            particles.push({ x: skier.x, y: skier.y,
+              vx: Math.cos(a) * s, vy: Math.sin(a) * s - 60 * S,
+              life: 1, decay: 1.0 + Math.random() * 0.8, size: (2 + Math.random() * 4) * S,
+              color: 'rgba(230,240,255,0.85)' });
+          }
           gameOver(); return;
         }
       } else if (!o.passed && g.cy > skier.y) {
         // obstáculo acabou de passar pelo esquiador sem bater
         o.passed = true;
         const dx = Math.abs(skier.x - o.x);
-        if (dx < hd + 26 * S) { sfx('near_miss'); game.score += 5 * mult; game.flashTime = Math.max(game.flashTime, 0.1); }
+        if (dx < hd + 26 * S) {
+          const pts = 5 * mult;
+          sfx('near_miss'); game.score += pts;
+          game.flashTime = Math.max(game.flashTime, 0.15);
+          game.slowMo = Math.max(game.slowMo, 0.18);
+          // Texto flutuante "+5"
+          floatingTexts.push({
+            x: skier.x, y: skier.y - 30 * S,
+            text: '+' + pts, life: 1, color: '#ffcf3f',
+          });
+          // Brilho no esquiador
+          burst(skier.x, skier.y, '#ffcf3f', 6, 80);
+        }
       }
     }
 
@@ -407,6 +497,10 @@
     // ---- Partículas ----
     for (const pt of particles) { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += 200 * S * dt; pt.life -= pt.decay * dt; }
     particles = particles.filter(pt => pt.life > 0);
+
+    // ---- Textos flutuantes ----
+    for (const ft of floatingTexts) { ft.y -= 60 * S * dt; ft.life -= dt * 1.2; }
+    floatingTexts = floatingTexts.filter(ft => ft.life > 0);
 
     // ---- Timers ----
     for (const k in power) if (power[k] > 0) power[k] = Math.max(0, power[k] - dt);
@@ -456,6 +550,7 @@
     obstacles.slice().sort((a, b) => a.y - b.y).forEach(drawObstacle);
     drawSkier();
     drawParticles();
+    drawFloatingTexts();
 
     ctx.restore();
     if (game.flashTime > 0) { ctx.fillStyle = `rgba(255,255,255,${game.flashTime * 0.6})`; ctx.fillRect(0, 0, W, H); }
@@ -533,15 +628,22 @@
     ctx.fillStyle = 'rgba(100, 130, 170, 0.22)';
     ctx.beginPath(); ctx.ellipse(skier.x, skier.y + 26 * S, 16 * S, 5 * S, 0, 0, Math.PI * 2); ctx.fill();
 
-    const turning = Math.abs(skier.lean) > 0.25;
-    const img = turning ? A.skier.turn : A.skier.down;
+    // Seleção de sprite: usa animação direcional com os novos frames
+    const absLean = Math.abs(skier.lean);
+    let img;
+    if (absLean > 0.15 && A.skier.left && A.skier.left.length > 0) {
+      // Escolhe frame pela intensidade do lean: leve→0, médio→1, forte→2
+      // Mas também anima ciclicamente para dar vida ao movimento
+      const frames = skier.lean < 0 ? A.skier.left : A.skier.right;
+      img = frames[skier.animFrame % frames.length];
+    } else {
+      img = A.skier.down;
+    }
     const h = 72 * S, w = img.width * h / img.height;
     ctx.save();
     ctx.globalAlpha = ghost ? 0.55 : 1;
     ctx.translate(skier.x, skier.y);
-    // skier_turn faz a curva para a esquerda; espelha quando vai para a direita
-    if (turning && skier.lean > 0) ctx.scale(-1, 1);
-    if (!turning) ctx.rotate(skier.lean * 0.12);
+    if (absLean <= 0.15) ctx.rotate(skier.lean * 0.12);
     ctx.drawImage(img, -w / 2, -h / 2, w, h);
     ctx.restore();
   }
@@ -553,6 +655,26 @@
       ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
+  }
+
+  function drawFloatingTexts() {
+    for (const ft of floatingTexts) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, ft.life);
+      ctx.font = `900 ${Math.round(22 * S)}px 'Segoe UI', system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      // Contorno
+      ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+      ctx.lineWidth = 3 * S;
+      ctx.strokeText(ft.text, ft.x, ft.y);
+      // Texto
+      ctx.fillStyle = ft.color;
+      ctx.shadowColor = ft.color;
+      ctx.shadowBlur = 12 * S;
+      ctx.fillText(ft.text, ft.x, ft.y);
+      ctx.restore();
+    }
   }
 
   // ---------- Loop ----------

@@ -223,6 +223,53 @@ canvas#game {
   font-size: 18px; font-weight: 700;
 }
 .result-label { color: #9fb4d8; font-weight: 600; }
+
+/* Game Over panel enhancements */
+.gameover-panel {
+  animation: go-slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes go-slide-up {
+  from { transform: translateY(60px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.crash-icon {
+  font-size: 56px;
+  margin-bottom: 4px;
+  animation: crash-bounce 0.6s ease;
+  filter: drop-shadow(0 4px 18px rgba(255, 100, 60, 0.45));
+}
+@keyframes crash-bounce {
+  0% { transform: scale(2.5) rotate(-15deg); opacity: 0; }
+  40% { transform: scale(0.9) rotate(5deg); opacity: 1; }
+  60% { transform: scale(1.1) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+/* Powers summary no game over */
+.powers-summary {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 12px 0 6px;
+  min-height: 20px;
+}
+.power-summary-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+  animation: pop 0.4s ease;
+}
+.power-icon { font-size: 18px; }
+.power-count { font-variant-numeric: tabular-nums; opacity: 0.9; }
+.no-powers { color: #7b8fb0; font-size: 13px; font-style: italic; }
+
 .record { color: #ffcf3f; font-size: 19px; font-weight: 800; margin-bottom: 6px; animation: pop 0.4s ease; }
 
 #pause-btn {
