@@ -13,12 +13,12 @@
   let W = 480, H = 800, DPR = 1, S = 1; // S = escala relativa (H/800)
 
   function resize() {
-    const wrapW = window.innerWidth;
-    const wrapH = window.innerHeight;
-    const targetRatio = 3 / 5;
-    let cw = wrapH * targetRatio;
+    const wrapW = window.innerWidth, wrapH = window.innerHeight;
+    let cw = wrapW;
     let ch = wrapH;
-    if (cw > wrapW) { cw = wrapW; ch = wrapW / targetRatio; }
+    if (cw / ch > 0.65) {
+      cw = ch * 0.65;
+    }
     W = Math.round(cw);
     H = Math.round(ch);
     S = H / 800;
@@ -84,6 +84,8 @@
     powerbar: document.getElementById('powerbar'),
     start: document.getElementById('start-screen'),
     gameover: document.getElementById('gameover-screen'),
+    restartBtn: document.getElementById('restart-btn'),
+    menuBtn: document.getElementById('menu-btn'),
     pause: document.getElementById('pause-screen'),
     pauseBtn: document.getElementById('pause-btn'),
     startBtn: document.getElementById('start-btn'),
@@ -119,6 +121,34 @@
   const music = new Audio('sounds/music_game.mp3');
   music.loop = true; music.volume = 0.45;
   let muted = localStorage.getItem('skirush_muted') === '1';
+  let skirush_users = JSON.parse(localStorage.getItem('skirush_users') || '{}');
+  let playerName = localStorage.getItem('skirush_player_name') || '';
+
+  const playerNameInput = document.getElementById('player-name');
+  const playerPinInput = document.getElementById('player-pin');
+  if (playerNameInput) {
+    playerNameInput.value = playerName;
+  }
+
+  function updateRanking() {
+    const list = document.getElementById('ranking-list');
+    if (!list) return;
+    const usersArr = Object.keys(skirush_users).map(k => ({ name: k, best: skirush_users[k].best || 0 }));
+    usersArr.sort((a, b) => b.best - a.best);
+    
+    if (usersArr.length === 0) {
+      list.innerHTML = '<li style="color:#888;">Nenhum recorde ainda</li>';
+    } else {
+      list.innerHTML = '';
+      for (let i = 0; i < Math.min(3, usersArr.length); i++) {
+        let medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : '🥉');
+        list.innerHTML += `<li style="display:flex; justify-content:space-between; margin-bottom:4px;">
+           <span>${medal} ${usersArr[i].name}</span> <span>${Math.floor(usersArr[i].best)} pts</span>
+        </li>`;
+      }
+    }
+  }
+  updateRanking();
 
   function sfx(name) {
     if (muted) return;
@@ -167,10 +197,10 @@
 
   // ---------- Biomas ----------
   const BIOMES = [
-    { name: 'floresta', start: 0,   bgColor: '#dfeefc', edgeColor: 'rgba(150,190,225,0.25)', obstacleCats: ['tree','rock','mound'],    tint: [0,0,0] },
+    { name: 'floresta', start: 0,   bgColor: '#dfeefc', edgeColor: 'rgba(150,190,225,0.25)', obstacleCats: ['tree','rock','mound','log'],    tint: [0,0,0] },
     { name: 'gelo',     start: 2000, bgColor: '#e8f4ff', edgeColor: 'rgba(180,220,255,0.3)', obstacleCats: ['rock','snowball','fence'], tint: [30,20,-10] },
-    { name: 'caverna',  start: 5000, bgColor: '#2a2a3a', edgeColor: 'rgba(120,100,140,0.35)', obstacleCats: ['rock','stump','sign'],      tint: [-40,-30,-20] },
-    { name: 'aurora',   start: 10000,bgColor: '#1a1a3a', edgeColor: 'rgba(100,180,255,0.25)', obstacleCats: ['tree','snowman','bush'],    tint: [50,0,30] },
+    { name: 'caverna',  start: 5000, bgColor: '#2a2a3a', edgeColor: 'rgba(120,100,140,0.35)', obstacleCats: ['rock','stump','sign','deadtree'], tint: [-40,-30,-20] },
+    { name: 'aurora',   start: 10000,bgColor: '#1a1a3a', edgeColor: 'rgba(100,180,255,0.25)', obstacleCats: ['tree','snowman','bush','log'],    tint: [50,0,30] },
   ];
   let currentBiome = 0;
 
@@ -189,8 +219,24 @@
 
   function getSkinDef(id) { return SKINS.find(s => s.id === id) || SKINS[0]; }
   function getSelectedSkin() { return getSkinDef(selectedSkin); }
-  function unlockSkin(id) { if (!ownedSkins.includes(id)) { ownedSkins.push(id); localStorage.setItem('skirush_skins', JSON.stringify(ownedSkins)); } }
-  function selectSkin(id) { if (ownedSkins.includes(id)) { selectedSkin = id; localStorage.setItem('skirush_selected_skin', id); } }
+  function unlockSkin(id) {
+    if (!ownedSkins.includes(id)) {
+      ownedSkins.push(id);
+      if (playerName && skirush_users[playerName]) {
+        skirush_users[playerName].skins = ownedSkins;
+        saveUserDB();
+      }
+    }
+  }
+  function selectSkin(id) {
+    if (ownedSkins.includes(id)) {
+      selectedSkin = id;
+      if (playerName && skirush_users[playerName]) {
+        skirush_users[playerName].selectedSkin = id;
+        saveUserDB();
+      }
+    }
+  }
 
   // HSV recolor helper (draws skier frames to offscreen canvas with hue shift)
   const skinCache = new Map();
@@ -291,8 +337,8 @@
   canvas.addEventListener('pointercancel', endPointer);
   canvas.addEventListener('pointerleave', endPointer);
 
-  ui.startBtn.addEventListener('click', startGame);
-  document.getElementById('restart-btn').addEventListener('click', startGame);
+  ui.startBtn.addEventListener('click', handleLoginAndStart);
+  document.getElementById('restart-btn').addEventListener('click', handleLoginAndStart);
   document.getElementById('resume-btn').addEventListener('click', resumeGame);
   document.getElementById('quit-btn').addEventListener('click', toMenu);
   ui.pauseBtn.addEventListener('click', pauseGame);
@@ -305,6 +351,8 @@
   ui.shopBtn.addEventListener('click', openShop);
   ui.shopCloseBtn.addEventListener('click', closeShop);
   applyMute();
+  
+  ui.menuBtn.addEventListener('click', toMenu);
 
   function show(el) { el.classList.remove('hidden'); }
   function hide(el) { el.classList.add('hidden'); }
@@ -340,6 +388,10 @@
         if (!owned) {
           if (game.coins >= skin.price) {
             game.coins -= skin.price;
+            if (playerName && skirush_users[playerName]) {
+              skirush_users[playerName].coins = game.coins;
+              saveUserDB();
+            }
             unlockSkin(skin.id);
             selectSkin(skin.id);
             sfx('powerup');
@@ -353,6 +405,40 @@
       });
       ui.skinList.appendChild(card);
     });
+  }
+
+  function saveUserDB() {
+    localStorage.setItem('skirush_users', JSON.stringify(skirush_users));
+  }
+
+  function handleLoginAndStart() {
+    const name = playerNameInput.value.trim().toUpperCase();
+    const pin = playerPinInput.value.trim();
+    if (!name) { alert('Digite um nome para jogar!'); return; }
+    if (!pin) { alert('Digite um PIN (senha) para sua conta!'); return; }
+    
+    if (skirush_users[name]) {
+      if (skirush_users[name].pin !== pin) {
+        alert('PIN incorreto para este usuário!');
+        return;
+      }
+    } else {
+      skirush_users[name] = { pin, best: 0, coins: 0, skins: ['classic'] };
+      saveUserDB();
+    }
+    
+    playerName = name;
+    localStorage.setItem('skirush_player_name', name);
+    
+    // Carregar progresso
+    const u = skirush_users[name];
+    game.coins = u.coins || 0;
+    ui.best.textContent = Math.floor(u.best || 0);
+    ownedSkins = u.skins || ['classic'];
+    if (!ownedSkins.includes(selectedSkin)) selectedSkin = 'classic';
+    
+    updateRanking();
+    startGame();
   }
 
   // ---------- Fluxo de telas ----------
@@ -422,9 +508,21 @@
     // Maior combo
     const comboEl = document.getElementById('max-combo');
     if (comboEl) comboEl.textContent = '🔥 Melhor combo: ' + game.maxCombo + 'x';
-    if (sc > best) {
-      best = sc; localStorage.setItem(BEST_KEY, String(best));
-      ui.best.textContent = best; show(ui.newRecord);
+    
+    let isRecord = false;
+    if (playerName && skirush_users[playerName]) {
+      const u = skirush_users[playerName];
+      u.coins = game.coins; // update total coins
+      if (sc > (u.best || 0)) {
+        u.best = sc;
+        isRecord = true;
+      }
+      saveUserDB();
+      updateRanking();
+    }
+
+    if (isRecord) {
+      ui.best.textContent = skirush_users[playerName].best; show(ui.newRecord);
       sfx('game_over'); setTimeout(() => sfx('record'), 380);
     } else { hide(ui.newRecord); sfx('game_over'); }
     show(ui.gameover);
@@ -458,6 +556,14 @@
   }
 
   // ---------- Spawns ----------
+  function isPositionFree(x, y, radius) {
+    for (let i = 0; i < obstacles.length; i++) {
+      const g = obGeom(obstacles[i]);
+      if (Math.hypot(obstacles[i].x - x, g.cy - y) < radius + g.rad + 20 * S) return false;
+    }
+    return true;
+  }
+
   function spawnObstacle() {
     const biome = BIOMES[currentBiome];
     // Filter obstacles by biome category
@@ -482,13 +588,23 @@
       cx = Math.max(24 * S, Math.min(W - 24 * S, cx));
       const cy = H + 40 * S + i * 30 * S;
       const oy = arc ? -Math.sin((i / Math.max(1, n - 1)) * Math.PI) * 30 * S : 0;
+      if (!isPositionFree(cx, cy + oy, 16 * S)) continue; // Pula a moeda se cair na pedra
       coins.push({ x: cx, y: cy + oy, taken: false, seed: Math.random() * 10 });
     }
   }
   function spawnPowerup() {
     const names = Object.keys(POWER_DEFS);
     const name = names[(Math.random() * names.length) | 0];
-    powerups.push({ x: 40 * S + Math.random() * (W - 80 * S), y: H + 60 * S, name, phase: Math.random() * 6.28 });
+    let px = 40 * S + Math.random() * (W - 80 * S);
+    let py = H + 60 * S;
+    for (let i = 0; i < 5; i++) {
+      if (isPositionFree(px, py, 20 * S)) {
+        powerups.push({ x: px, y: py, name, phase: Math.random() * 6.28 });
+        break;
+      }
+      px = 40 * S + Math.random() * (W - 80 * S);
+      py += 10 * S;
+    }
   }
 
   // ---------- Partículas ----------
@@ -689,17 +805,20 @@
     }
 
     // ---- Limpeza ----
-    obstacles = obstacles.filter(o => o.y > -260 * S);
-    coins = coins.filter(c => c.y > -40 && !c.taken);
-    powerups = powerups.filter(p => p.y > -60 && !p.taken);
+    // ---- GC Otimizado: Filtro in-place ----
+    let oIdx = 0; for(let i=0; i<obstacles.length; i++) if (obstacles[i].y > -260 * S) obstacles[oIdx++] = obstacles[i]; obstacles.length = oIdx;
+    let cIdx = 0; for(let i=0; i<coins.length; i++) if (coins[i].y > -40 && !coins[i].taken) coins[cIdx++] = coins[i]; coins.length = cIdx;
+    let pIdx = 0; for(let i=0; i<powerups.length; i++) if (powerups[i].y > -60 && !powerups[i].taken) powerups[pIdx++] = powerups[i]; powerups.length = pIdx;
 
     // ---- Partículas ----
     for (const pt of particles) { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += 200 * S * dt; pt.life -= pt.decay * dt; }
-    particles = particles.filter(pt => pt.life > 0);
+    let ptIdx = 0; for(let i=0; i<particles.length; i++) if (particles[i].life > 0) particles[ptIdx++] = particles[i]; particles.length = ptIdx;
+
+    let tIdx = 0; for(let i=0; i<trails.length; i++) if (trails[i].life > 0) trails[tIdx++] = trails[i]; trails.length = tIdx;
 
     // ---- Textos flutuantes ----
     for (const ft of floatingTexts) { ft.y -= 60 * S * dt; ft.life -= dt * 1.2; }
-    floatingTexts = floatingTexts.filter(ft => ft.life > 0);
+    let ftIdx = 0; for(let i=0; i<floatingTexts.length; i++) if (floatingTexts[i].life > 0) floatingTexts[ftIdx++] = floatingTexts[i]; floatingTexts.length = ftIdx;
 
     // ---- Timers ----
     for (const k in power) if (power[k] > 0) power[k] = Math.max(0, power[k] - dt);
@@ -734,20 +853,33 @@
   }
   let powerbarCache = '';
   function updatePowerbar() {
-    let html = '';
+    let structureHtml = '';
+    let hasPower = false;
     for (const k in POWER_DEFS) {
       if (power[k] > 0) {
+        hasPower = true;
         const def = POWER_DEFS[k];
-        html += `<div class="power-chip" style="background:${def.color}dd">`
+        structureHtml += `<div class="power-chip" style="background:${def.color}dd">`
               + `<span>${def.icon} ${def.label}</span>`
-              + `<span class="timer">${power[k].toFixed(1)}s</span></div>`;
+              + `<span class="timer"></span></div>`;
       }
     }
-    if (html !== powerbarCache) { ui.powerbar.innerHTML = html; powerbarCache = html; }
-    else {
+    if (structureHtml !== powerbarCache) {
+      ui.powerbar.innerHTML = structureHtml;
+      powerbarCache = structureHtml;
+      if (hasPower) show(ui.powerbar);
+      else hide(ui.powerbar);
+    }
+    
+    if (hasPower) {
       const chips = ui.powerbar.querySelectorAll('.power-chip .timer');
       let i = 0;
-      for (const k in POWER_DEFS) if (power[k] > 0 && chips[i]) { chips[i].textContent = power[k].toFixed(1) + 's'; i++; }
+      for (const k in POWER_DEFS) {
+        if (power[k] > 0 && chips[i]) {
+          chips[i].textContent = Math.ceil(power[k]) + 's';
+          i++;
+        }
+      }
     }
   }
 
@@ -845,7 +977,7 @@
     const r = Math.max(0, Math.min(255, (num >> 16) + amt));
     const g = Math.max(0, Math.min(255, ((num >> 8) & 0xFF) + amt));
     const b = Math.max(0, Math.min(255, (num & 0xFF) + amt));
-    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    return `rgb(${r},${g},${b})`;
   }
 
   function drawTrails() {

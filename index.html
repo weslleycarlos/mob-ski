@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#1b2a4a">
 <title>Ski Rush — Descida Radical</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -34,8 +37,25 @@
     <!-- Tela inicial -->
     <div id="start-screen" class="overlay menu-overlay">
       <div class="menu-panel">
-        <p class="desc">Desça a montanha, desvie dos obstáculos, colete moedas e poderes especiais!</p>
-        <button id="start-btn" class="btn">▶ Jogar</button>
+        <h1 class="game-title">SKI RUSH</h1>
+        
+        <div id="player-profile" class="retro-box" style="margin-bottom: 12px; padding: 12px; background: rgba(0,0,0,0.5); border: 2px solid #555;">
+          <h2 style="font-size:20px; margin-bottom:8px; color:#9db8ff;">🔑 ACESSO DO JOGADOR</h2>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="player-name" placeholder="NOME" maxlength="10" style="flex:2; width:100%; padding:8px; font-family:'VT323', monospace; font-size:20px; text-align:center; background:#0d1626; color:#fff; border:2px solid #7ed0ff; text-transform:uppercase;">
+            <input type="password" id="player-pin" placeholder="PIN" maxlength="4" style="flex:1; width:100%; padding:8px; font-family:'VT323', monospace; font-size:20px; text-align:center; background:#0d1626; color:#fff; border:2px solid #7ed0ff;">
+          </div>
+        </div>
+
+        <div id="top3-ranking" class="retro-box" style="margin-bottom: 12px; padding: 12px; background: rgba(0,0,0,0.5); border: 2px solid #555;">
+          <h2 style="font-size:20px; margin-bottom:8px; color:#ffcf3f;">🏆 TOP 3 RANKING</h2>
+          <ul id="ranking-list" style="list-style:none; font-size:18px; color:#fff; margin:0; padding:0;">
+             <li style="color:#888;">Carregando...</li>
+          </ul>
+        </div>
+        
+        <p class="desc" style="margin-bottom:12px;">Desça a montanha, colete moedas e poderes!</p>
+        <button id="start-btn" class="btn">▶ JOGAR</button>
         <button id="shop-btn" class="btn btn-ghost">🛒 Loja</button>
         <div class="controls">
           <span class="ctrl-row">⌨️ Setas ◀ ▶ / A · D</span>
@@ -75,6 +95,7 @@
         <div id="max-combo" class="max-combo"></div>
         <div id="new-record" class="record hidden">🎉 Novo recorde!</div>
         <button id="restart-btn" class="btn">↻ Jogar de novo</button>
+        <button id="menu-btn" class="btn btn-ghost" style="margin-top: 10px;">⌂ Menu Inicial</button>
       </div>
     </div>
 

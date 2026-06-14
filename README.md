@@ -5,7 +5,7 @@ uma montanha infinita cheia de obstáculos, coletando moedas e poderes especiais
 enquanto a velocidade aumenta sem parar.
 
 Feito 100% em **HTML5 Canvas + JavaScript puro** — sem dependências, sem build.
-Funciona no navegador do computador e do celular.
+Apresenta um design **Retro 32-bit** utilizando fontes e gráficos em Pixel Art. Funciona diretamente no navegador do computador e do celular, adaptando-se a qualquer tela.
 
 ## ▶️ Como jogar
 
@@ -39,8 +39,17 @@ neve. Quanto mais longe você for, mais rápido fica. Colete moedas para somar
 pontos e aproveite os poderes para sobreviver. Seu recorde fica salvo no
 navegador.
 
+## 🗺️ Biomas
+
+Conforme você avança, o cenário muda! Você passará por **Floresta, Gelo, Caverna e Aurora Boreal**, com variações de cores no céu e diferentes obstáculos específicos para cada bioma (como troncos e bonecos de neve).
+
+## 👤 Sistema de Registro e Loja
+
+Na tela inicial, você pode inserir o seu nome de jogador. O jogo funciona inteiramente através do **`localStorage`** do navegador, sendo 100% compatível com *GitHub Pages* e hospedagens estáticas.
+Suas **Moedas, Pontuação Máxima e Skins Compradas** da loja ficarão salvas automaticamente na memória do navegador.
+
 ## 📁 Estrutura
 
-- `index.html` — estrutura e telas (menu, HUD, game over, pausa)
-- `style.css` — visual e layout responsivo
-- `game.js` — motor do jogo (física, spawns, colisões, render)
+- `index.html` — estrutura, perfil de jogador e telas (menu, HUD, game over, loja)
+- `style.css` — visual estilo arcade retro 32-bit
+- `game.js` — motor do jogo (física otimizada para evitar engasgos, transições, spritesheet customizado, registro de localstorage)
