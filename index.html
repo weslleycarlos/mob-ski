@@ -36,6 +36,7 @@
       <div class="menu-panel">
         <p class="desc">Desça a montanha, desvie dos obstáculos, colete moedas e poderes especiais!</p>
         <button id="start-btn" class="btn">▶ Jogar</button>
+        <button id="shop-btn" class="btn btn-ghost">🛒 Loja</button>
         <div class="controls">
           <span class="ctrl-row">⌨️ Setas ◀ ▶ / A · D</span>
           <span class="ctrl-row">📱 Arraste na tela</span>
@@ -50,6 +51,16 @@
       </div>
     </div>
 
+    <!-- Tela de loja -->
+    <div id="shop-screen" class="overlay hidden">
+      <div class="panel shop-panel">
+        <h1>🛒 Loja de Skins</h1>
+        <div class="shop-coins">🪙 <span id="shop-coins">0</span></div>
+        <div id="skin-list" class="skin-list"></div>
+        <button id="shop-close-btn" class="btn btn-ghost">✕ Fechar</button>
+      </div>
+    </div>
+
     <!-- Tela de game over -->
     <div id="gameover-screen" class="overlay hidden">
       <div class="panel gameover-panel">
@@ -61,6 +72,7 @@
           <div class="result-item"><span class="result-label">📏 Distância</span><span id="final-dist">0 m</span></div>
         </div>
         <div id="powers-summary" class="powers-summary"></div>
+        <div id="max-combo" class="max-combo"></div>
         <div id="new-record" class="record hidden">🎉 Novo recorde!</div>
         <button id="restart-btn" class="btn">↻ Jogar de novo</button>
       </div>

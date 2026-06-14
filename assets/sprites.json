@@ -1,26 +1,26 @@
 {
- "skier": {
-  "down": {
-   "file": "skier_down.png",
-   "w": 114,
-   "h": 150
+  "skier": {
+   "down": {
+    "file": "skier_down.png",
+    "w": 114,
+    "h": 150
+   },
+   "left": [
+    { "file": "skier_left_1.png", "w": 130, "h": 150 },
+    { "file": "skier_left_2.png", "w": 130, "h": 150 },
+    { "file": "skier_left_3.png", "w": 130, "h": 150 }
+   ],
+   "right": [
+    { "file": "skier_right_1.png", "w": 130, "h": 150 },
+    { "file": "skier_right_2.png", "w": 130, "h": 150 },
+    { "file": "skier_right_3.png", "w": 130, "h": 150 }
+   ],
+   "gameOver": {
+    "file": "skier_game_over.png",
+    "w": 130,
+    "h": 150
+   }
   },
-  "turn": {
-   "file": "skier_turn.png",
-   "w": 129,
-   "h": 150
-  },
-  "left": [
-   { "file": "skier_left_1.png", "w": 130, "h": 150 },
-   { "file": "skier_left_2.png", "w": 130, "h": 150 },
-   { "file": "skier_left_3.png", "w": 130, "h": 150 }
-  ],
-  "right": [
-   { "file": "skier_right_1.png", "w": 130, "h": 150 },
-   { "file": "skier_right_2.png", "w": 130, "h": 150 },
-   { "file": "skier_right_3.png", "w": 130, "h": 150 }
-  ]
- },
  "coins": [
   {
    "file": "coin_0.png",
